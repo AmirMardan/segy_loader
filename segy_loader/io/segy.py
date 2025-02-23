@@ -90,7 +90,7 @@ def get_segy_header_text(file: str):
                     'data_shape': f.trace.raw[:].T.shape,
                     'format': f.format,
                     'sorting': f.sorting,
-                    'dt': (f.samples[1] - f.samples[0]) / 1e3,
+                    'dt': segyio.tools.dt(f),
                     'samples': f.samples,
                     'n_traces': f.tracecount,
                     'length': f.samples[-1]

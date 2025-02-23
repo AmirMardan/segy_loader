@@ -22,9 +22,9 @@ from segy_loader.io.segy import (
     get_segy_byte_example,
     get_segy_byte_value
 )
-from segy_loader.widgets import SegyByte
+from segy_loader.widgets import SegyByte, UnitConvertor
 from segy_loader.visualization.visualziation import imshow
-from segy_loader import Seis
+from segy_loader import Seis, float32
 
 class SegyLoader(QMainWindow):
     def __init__(self):
@@ -84,7 +84,13 @@ class SegyLoader(QMainWindow):
             self.__dict__[byte_name] = SegyByte(name=byte_name,
                                                 default_text=byte_key,
                                                 segy_path=self.selected_file)
-            
+        
+        self.dt_unit = UnitConvertor("dt [s]:")
+        self.dt_unit.unit.valueChanged.connect(self.update_dt)
+        
+        # self.dh_unit = UnitConvertor("dh [m]:")
+        # self.dh_unit.unit.valueChanged.connect(self.update_dh)
+        
         # self.time_unit
         byte_layout = QGridLayout()
         # first row
@@ -121,15 +127,47 @@ class SegyLoader(QMainWindow):
         byte_layout.addWidget(self.TRACE_SEQUENCE_FILE,
                               4, 0)
         
+        # sixth row
+        byte_layout.addWidget(self.dt_unit,
+                              5, 0)
+        # byte_layout.addWidget(self.dh_unit,
+        #                       5, 1)
         
         self.main_layout.addLayout(byte_layout)
     
+    def update_dt(self):
+        self.dt_unit.setExample(str(self.dt))
+        
+    # def update_dh(self):
+    #     # self.set_dh_example()
+    #     self.dh_unit.setExample(str(self.dh))
+
+    #     update_spatial_SegyByte_example(self.SourceX, dh=self.dh)
+    #     update_spatial_SegyByte_example(self.SourceY, dh=self.dh)
+    #     update_spatial_SegyByte_example(self.SourceZ, dh=self.dh)
+        
+    #     update_spatial_SegyByte_example(self.ReceiverX, dh=self.dh)
+    #     update_spatial_SegyByte_example(self.ReceiverY, dh=self.dh)
+    #     update_spatial_SegyByte_example(self.ReceiverZ, dh=self.dh)
+        
     def update_byte_examples(self):
         for byte_name, byte_key in self.bytes_map.items():
             self.__dict__[byte_name].example_value_label.setText(str(
                 get_segy_byte_example(self._selected_file,
                                       key=int(byte_key))))
-            
+        self.dt_unit.setExample(f"{self.dt}")
+
+        # self.dh_unit.setExample(f"{self.dh}")
+        
+    #     self.set_dh_example()
+        
+    # def set_dh_example(self):
+    #     x = abs(float32(self.SourceX.example_value_label.text().split("-")[1])) # "min - max"
+    #     z = abs(float32(self.SourceZ.example_value_label.text().split("-")[1]))
+    #     d = max(x, z) # if max(x, z) > 0 else 1
+        
+    #     self.dh_unit.setExample(f"{d / self.dh}")
+        
     def setup_load_help_buttons(self):
         """
         Buttons to load and help the user load the SEGY file.
@@ -183,11 +221,20 @@ class SegyLoader(QMainWindow):
         """
         self.text_edit.setPlainText(help_text)
         
-    def display_data(self):
-        imshow(self.data, self.dt)
+    def display_data(self) -> None:
+        data = self.create_seis()
+        d = data.get_gather(key="ffid", 
+                            value=[data.uffid[0]])
+        imshow(d, ffid=data.uffid[0])
     
-    def save_seis(self):
-            
+    def create_seis(self) -> Seis:
+        """Create a seis object
+
+        Returns
+        -------
+        Seis
+            Seis
+        """
         data = self.data
         header = {
             "dt": self.dt,
@@ -202,9 +249,13 @@ class SegyLoader(QMainWindow):
             "ry": self.get_segy_value(self.ReceiverY.byte_spinbox.value()),
             "rz": self.get_segy_value(self.ReceiverZ.byte_spinbox.value()),
             "offset": self.get_segy_value(self.Offset.byte_spinbox.value()),
-        }
-        seis_data = Seis(data, header)
-        
+        }        
+        return Seis(data, header)
+    
+    def save_seis(self):
+        """
+        Save seis data
+        """
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         file_name, _ = QFileDialog.getSaveFileName(self,
@@ -213,6 +264,8 @@ class SegyLoader(QMainWindow):
                                                    "Seis Files (*.seis)",
                                                    options=options)
         if file_name:
+            seis_data = self.create_seis()
+            
             extension = ".seis"
             if not file_name.endswith(extension):
                 file_name += extension
@@ -250,10 +303,23 @@ class SegyLoader(QMainWindow):
             self.status_bar.showMessage(f"Loaded SEGY file: {file_path}")
             self.save_button.setEnabled(True)
             self.display_button.setEnabled(True)
-            
+    
+    @property
+    def dt(self):
+        unit = self.dt_unit.value()
+        return float32(self.dt_original * 10**unit)
+    
+    # @property
+    # def dh(self):
+    #     unit = self.dh_unit.value()
+    #     return float32(self.dh_original *10 ** unit)
+    
     def show_file_info(self):
         header_text, data_info, self.data = get_segy_header_text(self._selected_file)
-        self.dt = data_info["dt"]
+        self._dt = data_info["dt"]
+        self.dt_original = data_info["dt"]
+        # self.dh_original = 1
+        
         self.samples = data_info["samples"]
         
         self.text_edit.setPlainText(header_text)
@@ -274,6 +340,17 @@ class SegyLoader(QMainWindow):
             Trace length: {data_info['length']}
         """)
         self.text_edit.appendPlainText(text_to_append)
+
+
+# def parse_example_from_SegyByte(byte_name):
+#     ex = byte_name.example_value_label.text().split("-")
+#     return float32([ex[0], ex[1]])
+
+
+# def update_spatial_SegyByte_example(byte_name, dh):
+#     d = parse_example_from_SegyByte(byte_name)
+#     byte_name.example_value_label.setText("{} - {}".format(d[0] / dh, d[1] / dh))
+        
         
 if __name__ == "__main__":
     import sys
