@@ -5,8 +5,8 @@ from .segy import (load_segy,
                    save_segy,
                    get_segy_header)
 
-# from .seis import (write_seis,
-#                      load_seis)
+from .seis import (write_seis,
+                     load_seis)
 
 __all__ = [
     'load_seg2', 
@@ -14,6 +14,6 @@ __all__ = [
     'save_segy',
     'seg2_segy',
     'get_segy_header',
-    # 'write_seis',
-    # 'load_seis'
+    'write_seis',
+    'load_seis'
     ]

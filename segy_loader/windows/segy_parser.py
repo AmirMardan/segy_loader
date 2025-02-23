@@ -1,8 +1,6 @@
 from PySide6.QtWidgets import (
     # QApplication,
     QMainWindow,
-    QLabel,
-    QTextEdit,
     QPlainTextEdit,
     QPushButton,
     QVBoxLayout,
@@ -10,7 +8,6 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QWidget,
     QStatusBar,
-    QPlainTextEdit,
     QFileDialog
     )
 import textwrap
@@ -32,7 +29,7 @@ from segy_loader import Seis
 class SegyLoader(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SEGY Loader - GImage")
+        self.setWindowTitle("SEGY Loader")
         self.setGeometry(100, 100, 800, 600)
         
         self._selected_file = ""

@@ -77,7 +77,6 @@ class SegyByte(QWidget):
             self.update_example_value)
         
     def update_example_value(self):
-        a = 1
         self.example_value_label.setText(
             get_segy_byte_example(self.segy_path(),
                                   key=int(self.byte_spinbox.value())))
