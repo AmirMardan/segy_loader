@@ -6,3 +6,8 @@ build/
 .vscode/
 .env
 .DS_Store
+0_segy_loader/
+
+# the package can be used with other python versions
+.python-version 
+poetry.lock
